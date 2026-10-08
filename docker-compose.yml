@@ -1,0 +1,108 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: agri_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agri_user
+      POSTGRES_PASSWORD: agri_secure_pass
+      POSTGRES_DB: agri_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agri_user -d agri_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - agri_network
+
+  mqtt:
+    build:
+      context: ./mqtt
+      dockerfile: Dockerfile
+    container_name: agri_mosquitto
+    restart: unless-stopped
+    ports:
+      - "1883:1883"
+    environment:
+      MQTT_BACKEND_PASS: backend_secure_mqtt_pass
+      MQTT_SOIL_PASS: sim_soil_pass
+      MQTT_ENV_PASS: sim_env_pass
+      MQTT_WATER_PASS: sim_water_pass
+      MQTT_ACTUATOR_PASS: sim_actuator_pass
+    volumes:
+      - mosquitto_data:/mosquitto/data
+    networks:
+      - agri_network
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: agri_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mqtt:
+        condition: service_started
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://agri_user:agri_secure_pass@postgres:5432/agri_db
+      SECRET_KEY: agri_secure_production_secret_key_change_in_prod_1234567890
+      MQTT_BROKER_HOST: mqtt
+      MQTT_BROKER_PORT: 1883
+      MQTT_USER: backend_service
+      MQTT_PASSWORD: backend_secure_mqtt_pass
+      RATE_LIMIT_PER_MINUTE: 120
+      MAX_PUMP_RUNTIME_SECONDS: 600
+      SENSOR_WATCHDOG_TIMEOUT_SECONDS: 60
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - agri_network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agri_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "3000:80"
+    networks:
+      - agri_network
+
+  iot-simulator:
+    build:
+      context: ./iot-simulator
+      dockerfile: Dockerfile
+    container_name: agri_simulator
+    restart: unless-stopped
+    depends_on:
+      - mqtt
+      - backend
+    environment:
+      MQTT_BROKER_HOST: mqtt
+      MQTT_BROKER_PORT: 1883
+      BACKEND_API_URL: http://backend:8000/api
+    networks:
+      - agri_network
+
+volumes:
+  postgres_data:
+  mosquitto_data:
+
+networks:
+  agri_network:
+    driver: bridge

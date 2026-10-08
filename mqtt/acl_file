@@ -1,0 +1,29 @@
+# MQTT Access Control List (ACL)
+# Enforces Principle of Least Privilege and Device Isolation
+
+# Backend Core Service (Authorized for full ingestion and command dispatch)
+user backend_service
+topic readwrite farm/#
+
+# Soil Moisture Sensor Device
+user sim_soil_01
+topic write farm/farm_1/device/DEV_SOIL_01/sensor
+topic readwrite farm/farm_1/device/DEV_SOIL_01/status
+
+# Environmental Sensor Device (Temp & Humidity)
+user sim_env_01
+topic write farm/farm_1/device/DEV_ENV_01/sensor
+topic readwrite farm/farm_1/device/DEV_ENV_01/status
+
+# Water Level Sensor Device
+user sim_water_01
+topic write farm/farm_1/device/DEV_WATER_01/sensor
+topic readwrite farm/farm_1/device/DEV_WATER_01/status
+
+# Actuator Subsystem (Pump & Greenhouse Controllers)
+user sim_actuator_01
+topic read farm/farm_1/device/+/command
+topic write farm/farm_1/device/+/ack
+topic readwrite farm/farm_1/device/+/status
+
+# Rogue / Untrusted clients have NO ACL permissions defined here!

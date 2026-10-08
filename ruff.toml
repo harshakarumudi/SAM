@@ -1,0 +1,15 @@
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = ["E", "F", "W", "B", "I"]
+ignore = [
+    "B008",  # Do not perform function calls in argument defaults (standard for FastAPI Depends)
+    "E501",  # Line too long
+    "E712",  # Avoid equality comparisons to True/False (SQLAlchemy column comparison)
+    "B904",  # raise ... from err
+]
+
+[lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/*" = ["B008", "F841"]
