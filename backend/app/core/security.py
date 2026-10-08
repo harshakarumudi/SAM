@@ -3,10 +3,10 @@ import hashlib
 import hmac
 
 import bcrypt
+import jwt
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-import jwt
 
 from backend.app.core.config import settings
 from backend.app.core.database import get_db

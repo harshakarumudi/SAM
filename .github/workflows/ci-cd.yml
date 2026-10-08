@@ -57,6 +57,8 @@ jobs:
           pip install -r backend/requirements.txt
 
       - name: Run Test Suite with Pytest & Hypothesis
+        env:
+          PYTHONPATH: .
         run: |
           pytest tests/ -v
 
